@@ -238,16 +238,8 @@ end
 def process_sheet(sheet)
   sheet.each $skip_row do |row|
     release_id = row[0].to_i
-    label = row[2]
-    # Edgy case
-    if label.instance_of? Float
-      label = label.to_i.to_s
-    end
-    catno = row[3]
-    # Edgy case
-    if catno.instance_of? Float
-      catno = catno.to_i.to_s
-    end
+    label = force_str(row[2], "label")
+    catno = force_str(row[3], "catno")
     $mismatch_detail.clear
     result = search(release_id, label.to_ascii, catno)
     case result

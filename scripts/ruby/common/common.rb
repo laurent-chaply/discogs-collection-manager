@@ -134,3 +134,17 @@ def array_to_ascii(string_array)
   end
   return ascii
 end
+
+def force_str(value, name)
+  str = value
+  if value.is_a?(Float)
+    $logger.warn("FORCING STRING FOR #{name} #{value}")
+    if value.to_i == value
+      return value.to_i.to_s
+    else
+      return value.to_s
+    end
+  else
+    return value
+  end 
+end
