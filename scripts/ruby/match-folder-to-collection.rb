@@ -1,11 +1,27 @@
-require 'discogs'
-require 'pry'
-require 'logger'
-require 'optparse'
-require 'spreadsheet'
-require 'discogs'
-require 'open3'
-require 'shellwords'
+require_relative "common/common"
+
+# Options
+$lookup_dir = "/Users/aleen/Music/00 - Main/Electronic/00 - By Label/"
+$collection_xls = "#{$export_dir}/collection.xls"
+$collection_sheet_idx = 0
+
+$output_file_name = "folders-to-collection.csv"
+$output_file_mode = "w"
+
+def parse_specific_options(opts)
+  opts.on("-d", "--dir d", Integer) do |d|
+    $lookup_dir = d
+  end
+  opts.on("-x", "--xls x") do |x|
+    $collection_xls = x
+  end
+  opts.on("--debug-label sl") do |sl|
+    $debug_search_label = sl
+  end
+  opts.on("--debug-catno sc") do |sc|
+    $debug_search_catno = sc
+  end
+end
 
 class SearchInfo
   attr_reader :message, :query_info
@@ -49,7 +65,7 @@ class LabelInfo
       end
       @label_alt.uniq!
     end
-    pp self
+    # pp self
   end
   def accept_label_part(label_part)
     exclude_words = ["the"]
@@ -122,48 +138,13 @@ class LabelInfo
   def accept(search_info)
     self.search_infos(false).each do |si|
       $logger.debug("comparing #{si.query_info} and #{search_info.query_info}")
-      if si.query_info == search_info.query_info
+      if array_to_ascii(si.query_info) == array_to_ascii(search_info.query_info)
         return true
       end
     end
     return false
   end
 end
-
-APP_NAME = "YOUR DISCOGS APP NAME"
-DEFAULT_FOLDER_ID = 1
-
-# Options
-$username = "YOUR DISCOGS USER NAME"
-$user_token = "YOUR DISCOGS TOKEN ID"
-$source_folder_id = 1
-$target_folder_id = 626998
-$skip_row = 1
-$log_file_name = "match_folder.log"
-$output_file_name = "folders-to-discogs.csv"
-$csv_separator = ";"
-$lookup_dir = "/Users/aleen/Music/00 - Main/Electronic/00 - By Label/"
-
-$wrapper = Discogs::Wrapper.new(APP_NAME, user_token: $user_token)
-
-File.delete($log_file_name)
-$logger = Logger.new($log_file_name)
-$logger.level = Logger::INFO
-
-$logger.info("")
-$logger.info("***********************************")
-$logger.info("**** DISCOGS MATCH FOLDERS     ****")
-$logger.info("***********************************")
-$logger.info("")
-
-book = Spreadsheet.open '../collection.xls'
-sheet1 = book.worksheet 0
-$count_total = sheet1.row_count - $skip_row
-$count_match = 0
-$count_not_found = 0
-$count_ambiguous = 0
-
-$out = File.new($output_file_name, "w")
 
 # UTILITIES
 
@@ -210,7 +191,7 @@ end
 def handle_found(release_id, search_info, path, validate = true)
   if validate
     if !validate(search_info, path)
-      $logger.error("[MISMATCH]#{search_info.message} > #{path}")
+      $mismatch_detail << "[MISMATCH]#{search_info.message} > #{path}"
       return :match_not_found
     end
   end
@@ -267,7 +248,8 @@ def process_sheet(sheet)
     if catno.instance_of? Float
       catno = catno.to_i.to_s
     end
-    result = search(release_id, label, catno)
+    $mismatch_detail.clear
+    result = search(release_id, label.to_ascii, catno)
     case result
     when :match_found
       $count_match += 1
@@ -275,6 +257,9 @@ def process_sheet(sheet)
       $logger.warn("[AMBIGUOUS/NOT FOUND] #{label} #{catno}")
       $count_ambiguous += 1
     else
+      $mismatch_detail.each do |detail|
+        $logger.error(detail)
+      end
       $logger.error("[NOT FOUND] #{label} #{catno}")
       $count_not_found += 1
     end
@@ -287,6 +272,22 @@ def process_sheet(sheet)
   $logger.info("#{$count_ambiguous} ambiguous")
 end
 
-# process_sheet(sheet1)
-$logger.level = Logger::DEBUG
-search(1234,"Natural Midi", "NM 006")
+require_relative "common/init"
+
+book = Spreadsheet.open $collection_xls
+sheet1 = book.worksheet $collection_sheet_idx
+$count_total = sheet1.row_count - $skip_row
+$count_match = 0
+$count_not_found = 0
+$count_ambiguous = 0
+
+$mismatch_detail = []
+
+$out = File.new("#{$export_dir}/#{$output_file_name}", "#{$output_file_mode}")
+
+if(!$debug_search_label.nil?)
+  $logger.level = Logger::DEBUG
+  search(1234, $debug_search_label, $debug_search_catno)
+else
+  process_sheet(sheet1)
+end

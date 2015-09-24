@@ -4,6 +4,8 @@ require 'logger'
 require 'optparse'
 require 'persistent-cache'
 require 'spreadsheet'
+require 'open3'
+require 'stringex_lite'
 
 # Generic constants
 DEFAULT_WORK_DIR = "#{Dir.home}/.discogs-collection-manager"
@@ -44,6 +46,9 @@ $csv_separator = ";"
 $float_separator = ","
 $export_dir = "#{Dir.home}/Music/Records/Discogs"
 
+# spreadsheet parameters
+$skip_row = 1
+
 # Logging functions
 
 def initialize_log
@@ -52,6 +57,7 @@ def initialize_log
     File.delete(log_file)
   end
   $logger = Logger.new(log_file)
+  $logger.level = Logger::INFO
 end
 
 def script_banner
@@ -119,4 +125,12 @@ def is_vinyl?(release)
     end
   end
   return false
+end
+
+def array_to_ascii(string_array)
+  ascii = []
+  string_array.each do |s|
+    ascii << s.to_ascii
+  end
+  return ascii
 end
