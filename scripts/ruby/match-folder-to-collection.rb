@@ -1,7 +1,7 @@
 require_relative "common/common"
 
 # Options
-$lookup_dir = "/Users/aleen/Music/00 - Main/Electronic/00 - By Label/"
+$lookup_dir = "#{Dir.home}/Music/00 - Main/Electronic/00 - By Label/"
 $collection_xls = "#{$export_dir}/collection.xls"
 $collection_sheet_idx = 0
 
