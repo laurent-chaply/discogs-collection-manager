@@ -100,6 +100,28 @@ def collection_release_to_str(release, separator = " - ")
   return collection_release_basics(release).join(separator)
 end
 
+def normalize_label(label)
+  excluded_words = ["record","records","recording","recordings","music","audio","schallplatten"]
+  return label.gsub(/[[:punct:] ]+/, " ").split.delete_if{ |x| excluded_words.include?(x) }
+end
+
+
+def artists_to_str2(artists)
+  artists_array = []
+  join = ""
+  artists.each do |artist|
+    name = join + artist.name
+    join = artist.join
+    if join != ""
+      join = " " + join + " "
+    else
+      join = ", "
+    end
+    artists_array.push(name)
+  end
+  return artists_array.join()
+end
+
 def artists_to_str(release)
   artists = release.basic_information.artists
   artists_array = []
@@ -127,10 +149,14 @@ def is_vinyl?(release)
   return false
 end
 
-def array_to_ascii(string_array)
+def array_to_ascii(string_array, downcase = false)
   ascii = []
   string_array.each do |s|
-    ascii << s.to_ascii
+    if downcase
+      ascii << s.to_ascii.downcase
+    else
+      ascii << s.to_ascii
+    end  
   end
   return ascii
 end
@@ -146,5 +172,27 @@ def force_str(value, name)
     end
   else
     return value
+  end 
+end
+
+def iterate_subdir(dir, &block)
+  Dir.entries(dir).each do |filename|
+    if ![".",".."].include?(filename)
+      file = File.join(dir,filename)
+      if File.directory?(file)
+        block.call(file)
+      end
+    end
+  end
+end
+
+def iterate_files(dir, regex, &block)
+  if File.exists?(dir)
+    Dir.entries(dir).select { |f| f =~ regex }.each do |filename|
+      file = File.join(dir, filename)
+      block.call(file)
+    end
+  else
+    puts "*********** File not found #{dir}"
   end 
 end

@@ -1,8 +1,9 @@
 require_relative "common/common"
 
 # Options
-$lookup_dir = "#{Dir.home}/Music/00 - Main/Electronic/00 - By Label/"
-$collection_xls = "#{$export_dir}/collection.xls"
+$lookup_dir = "/Volumes/Media/Music/ZZ - HQ Archive/Electronic/00 - By Label/"
+$collection_xls = "#{$export_dir}/collection-raw.xls"
+$blacklist_file = "#{$export_dir}/folders-to-collection-blacklist.csv"
 $collection_sheet_idx = 0
 
 $output_file_name = "folders-to-collection.csv"
@@ -21,6 +22,9 @@ def parse_specific_options(opts)
   opts.on("--debug-catno sc") do |sc|
     $debug_search_catno = sc
   end
+  opts.on("--debug-title st") do |st|
+    $debug_search_title = st
+  end
 end
 
 class SearchInfo
@@ -29,18 +33,30 @@ class SearchInfo
     @label_info = label_info
     @query_info = query_info
     @level = level
-    @message = "[Level #{@level}] #{label_info.label} #{label_info.catno} #{search_query}"
+    @message = "[Level #{@level}] #{label_info.label} #{label_info.catno} #{label_info.title} #{search_query}"
+  end
+  def title?
+    return @level == "T"
+  end
+  def label
+    return @label_info.label
   end
   def search_query
-    return "[#{@query_info.join(" ")}]"
+    query = @query_info.join(" ")
+    if !title?
+      return "[#{query}]"
+    else
+      return query
+    end
   end
 end
 
 class LabelInfo
-  attr_reader :label, :catno
-  def initialize(label, catno)
-    @label = label.to_s.downcase.gsub(/ ?\(\d+\)/,"")
+  attr_reader :label, :catno, :title
+  def initialize(label, catno, title)
+    @label = label.to_s.downcase.gsub(/ ?\(\d+\)/,"").gsub(/[[:punct:] ]+/, " ")
     @catno = catno.to_s.downcase
+    @title = title
     @catno_other = []
     @label_alt = []
     parsed_catno = @catno.gsub(/[[:punct:] ]+/, " ").split(" ")
@@ -55,8 +71,7 @@ class LabelInfo
     if !@label_alt.empty?
       @label_alt << @label
       # label alternatives
-      excluded_words = ["record","records","recording","recordings","music","audio"]
-      parsed_label = @label.gsub(/[[:punct:] ]+/, " ").split.delete_if{ |x| excluded_words.include?(x) }
+      parsed_label = normalize_label(@label)
       @label_alt << parsed_label.join(" ")
       parsed_label.each do |label_part|
         if accept_label_part(label_part)
@@ -65,7 +80,6 @@ class LabelInfo
       end
       @label_alt.uniq!
     end
-    # pp self
   end
   def accept_label_part(label_part)
     exclude_words = ["the"]
@@ -98,7 +112,8 @@ class LabelInfo
   end
   def search_infos(extra_search = true)
     search_infos = []
-    search_infos << SearchInfo.new(self, [@catno], 0)
+    level = 0
+    search_infos << SearchInfo.new(self, [@catno], level)
     if !@label_alt.empty?
       level = 1
       @label_alt.each do |label_alt|
@@ -108,7 +123,40 @@ class LabelInfo
         level += 1
       end
     end
+    # Try with title
+    if !@title.nil?
+      if title = validate_title(@title)
+        search_infos << SearchInfo.new(self, [title], "T")
+      end
+      # handles multiples " - " dirty
+      # alt_titles = @title.split(" - ")
+      # if alt_titles.size > 1
+      #   alt_titles.each do |alt_title|
+      #     if t = validate_title(alt_title)
+      #       search_infos << SearchInfo.new(self, [alt_title], "T")
+      #     end
+      #   end
+      # end
+    end  
     return search_infos
+  end
+  def get_alt_titles
+    alt_titles = @title.split(" - ")
+  end
+  def validate_title(title)
+    if title.nil?
+      return false
+    end
+    normalized_title = title.downcase.gsub(/[[:punct:] ]+/, " ").strip
+    if res = normalized_title.match(/(.*)( e ?p|l ?p)$/)
+      normalized_title = res.captures[0]
+    end
+    if normalized_title.match(/^(sampler|(the )?remix(e)?(s|d)?|revisited|untitled|(part|no|vol(ume)? )?\d+)$/) or
+      normalized_title.size == 1
+      $logger.warn("Ignoring title #{normalized_title}")
+      return false
+    end
+    return normalized_title
   end
   def get_alt_paddings(number)
     paddings = {}
@@ -120,6 +168,7 @@ class LabelInfo
       paddings["-#{removed}"] = String.new(pad)  
     end
     paddings["+1"] = "0#{number}"
+    paddings["+2"] = "00#{number}"
     return paddings
   end
   def add_fix_search(label_alt, search_infos, level)
@@ -138,8 +187,13 @@ class LabelInfo
   def accept(search_info)
     self.search_infos(false).each do |si|
       $logger.debug("comparing #{si.query_info} and #{search_info.query_info}")
-      if array_to_ascii(si.query_info) == array_to_ascii(search_info.query_info)
-        return true
+      if array_to_ascii(si.query_info, true) == array_to_ascii(search_info.query_info, true)
+        # Check lable when title
+        if search_info.title? && array_to_ascii(normalize_label(search_info.label)) != array_to_ascii(normalize_label(@label))
+          $logger.warn("X Title match but label differs")
+        else
+          return true
+        end
       end
     end
     return false
@@ -149,9 +203,9 @@ end
 # UTILITIES
 
 def validate(search_info, candidate)
-  if regex_result = candidate.downcase.match(/([^\/]+)\/\[[^\]]+\] ?\[([^\]]+)\]/)
+  if regex_result = candidate.downcase.match(/([^\/]+)\/\[[^\]]+\] ?\[([^\]]+)\](( [^\-]+ \-)? (.*))?/)
     # pp "validating" + candidate
-    return LabelInfo.new(regex_result.captures[0], regex_result.captures[1]).accept(search_info)
+    return LabelInfo.new(regex_result.captures[0], regex_result.captures[1], regex_result.captures[4]).accept(search_info)
   end
   return false
 end
@@ -195,15 +249,20 @@ def handle_found(release_id, search_info, path, validate = true)
       return :match_not_found
     end
   end
+  # pp $blacklist
+  if path == $blacklist[release_id]
+    $mismatch_detail << "[BLACKLISTED]#{search_info.message} #{release_id} > #{path}"
+    return :match_not_found
+  end
   $logger.info("[FOUND]#{search_info.message} > #{path}")
-  $out.syswrite([release_id, path].join($csv_separator))  
+  $out.write([release_id, path].join($csv_separator) + "\n")  
   return :match_found
 end
 
-def search(release_id, label, catno)
+def search(release_id, label, catno, title)
   $logger.debug("")
   $logger.debug("********* SEARCHING #{label} #{catno} **************")
-  label_info = LabelInfo.new(label, catno)
+  label_info = LabelInfo.new(label, catno, title)
   end_result = :match_not_found
   label_info.search_infos.each do |search_info|
     result = do_search(release_id, search_info)
@@ -224,7 +283,9 @@ def do_search(release_id, search_info)
   result = []
   stdout.readlines.each do |line|
     line.slice! $lookup_dir
-    result << line
+    if line.count("/") == 1
+      result << line.strip
+    end
   end
   if result.empty?
     return :match_not_found
@@ -240,8 +301,9 @@ def process_sheet(sheet)
     release_id = row[0].to_i
     label = force_str(row[2], "label")
     catno = force_str(row[3], "catno")
+    title = force_str(row[5], "title")
     $mismatch_detail.clear
-    result = search(release_id, label.to_ascii, catno)
+    result = search(release_id, label.to_ascii, catno, title)
     case result
     when :match_found
       $count_match += 1
@@ -275,11 +337,20 @@ $count_ambiguous = 0
 
 $mismatch_detail = []
 
+# Load blacklist
+$blacklist = {}
+File.open($blacklist_file).readlines.each do |line|
+  elements = line.strip.split(";")
+  $blacklist[elements[0].to_i] = elements[1]
+end
+
 $out = File.new("#{$export_dir}/#{$output_file_name}", "#{$output_file_mode}")
+header = ["Discogs ID", "Path"]
+$out.write(header.join($csv_separator) + "\n")
 
 if(!$debug_search_label.nil?)
   $logger.level = Logger::DEBUG
-  search(1234, $debug_search_label, $debug_search_catno)
+  search(2112993, $debug_search_label, $debug_search_catno, $debug_search_title)
 else
   process_sheet(sheet1)
 end
