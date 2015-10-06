@@ -1,11 +1,13 @@
-require 'discogs'
-require 'pry'
-require 'logger'
-require 'optparse'
-require 'persistent-cache'
-require 'spreadsheet'
-require 'open3'
-require 'stringex_lite'
+require "discogs"
+require "pry"
+require "logger"
+require "optparse"
+require "persistent-cache"
+require "spreadsheet"
+require "open3"
+require "stringex_lite"
+require "taglib"
+require "fileutils"
 
 # Generic constants
 DEFAULT_WORK_DIR = "#{Dir.home}/.discogs-collection-manager"
@@ -18,8 +20,17 @@ FORMAT_VINYL = "Vinyl"
 DEFAULT_FOLDER_ID = 0
 UNCATEGORIZED_FOLDER_ID = 1
 
+# Local collection constants and variables
+DEFAULT_COLLECTION_DIR_SQ = "#{Dir.home}/Music/00 - Main"
+DEFAULT_COLLECTION_DIR_HQ = "/Volumes/Media/Music/ZZ - HQ Archive"
+DEFAULT_COLLECTION_BASE_DIRECTORY = "Electronic/00 - By Label"
+
+$collection_dir_sq = DEFAULT_COLLECTION_DIR_SQ
+$collection_dir_hq = DEFAULT_COLLECTION_DIR_HQ
+$collection_base_dir = DEFAULT_COLLECTION_BASE_DIRECTORY
+
 # Caching constants
-CACHE_LIST = :collection, :price
+CACHE_LIST = :collection, :price, :folder_to_collection, :release
 
 # Logging parameters
 $reset_log = true
@@ -45,6 +56,9 @@ $cache = {}
 $csv_separator = ";"
 $float_separator = ","
 $export_dir = "#{Dir.home}/Music/Records/Discogs"
+$csv_yes = 1
+$csv_no = 0
+$csv_no_value = "-"
 
 # spreadsheet parameters
 $skip_row = 1
@@ -193,6 +207,39 @@ def iterate_files(dir, regex, &block)
       block.call(file)
     end
   else
-    puts "*********** File not found #{dir}"
+    $logger.warn ("[FILE NOT FOUND] #{dir}")
   end 
+end
+
+def iterate_collection_releases(dir, &block)
+  iterate_subdir(dir) do |label|
+    iterate_subdir(label) do |release|
+      block.call(release)
+    end
+  end
+end
+
+def iterate_collection_tracks(dir, regex, &block)
+  iterate_collection_releases(dir) do |release| 
+    iterate_files(release, regex) do |track|
+      block.call(track)
+    end
+  end
+end
+
+def get_cached_release(id)
+  cached = false
+  if $do_cache
+    release = $cache[:release][id]
+  end
+  if release.nil?
+    sleep 1.2
+    release = $wrapper.get_release(id)
+    if $do_cache
+      $cache[:release][id] = release
+    end
+  else
+    cached = true
+  end
+  return release, cached
 end

@@ -3,8 +3,7 @@ require_relative "common/common"
 
 # Options
 $itunes_library = "#{Dir.home}/Music/iTunes/iTunes Music Library.xml"
-$lookup_dir = "#{Dir.home}/Music/00 - Main/Electronic/00 - By Label"
-$collection_base_dir
+$lookup_dir = "#{$collection_dir_sq}/#{$collection_base_dir}"
 $output_file_name = "itunes-ratings.csv"
 $output_file_mode = "w"
 $filter_regexp = /^file\:\/\/(localhost)?#{Regexp.escape($lookup_dir)}\/(([^\/]+)\/\[[^\]]+\] ?\[([^\]]+)\] ([^\/]+))\/([^ ]+) \-/
@@ -130,29 +129,33 @@ end
 
 $out = File.new("#{$export_dir}/#{$output_file_name}", "#{$output_file_mode}")
 
-header = ["Release path", "Status", "Complete", "Avg Rating", "Top", "Rating detail"]
+header = ["Release path", "Rtg complete", "Top", "Avg rtg", "Rtg status", "Rtg detail"]
 $out.write(header.join($csv_separator) + "\n")
 
 # post process ratings by album
 $ratings.each do |k, rating_info|
   rating_count = rating_info.detail.rating_count
   if rating_count > 0
-    has_top_track = false
-    total = 0
+    # Path
     rating_info_line = [rating_info.file_path]
-    track_count = rating_info.detail.tracks 
-    rating_info_line << "#{rating_count} of #{track_count}"
-    rating_complete = "N"
+    # Complete
+    track_count = rating_info.detail.tracks
+    rating_complete = $csv_no
     if rating_count == track_count
-      rating_complete = "Y"
+      rating_complete = $csv_yes
     end
     rating_info_line << rating_complete
-    rating_info_line << rating_info.detail.avg_rating
-    top = "N"
+    # Top
+    top = $csv_no
     if rating_info.detail.top_track
-      top = "Y"
+      top = $csv_yes
     end
     rating_info_line << top
+    # Avg
+    rating_info_line << rating_info.detail.avg_rating
+    # Status
+    rating_info_line << "#{rating_count} of #{track_count}"
+    # Detail
     rating_info_line << rating_info.detail.rating_list.join("|")
     $out.write(rating_info_line.join($csv_separator) + "\n")
   end

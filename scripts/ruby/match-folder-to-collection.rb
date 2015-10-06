@@ -1,13 +1,15 @@
 require_relative "common/common"
 
 # Options
-$lookup_dir = "/Volumes/Media/Music/ZZ - HQ Archive/Electronic/00 - By Label/"
+$lookup_dir = "#{$collection_dir_hq}/#{$collection_base_dir}"
 $collection_xls = "#{$export_dir}/collection-raw.xls"
 $blacklist_file = "#{$export_dir}/folders-to-collection-blacklist.csv"
 $collection_sheet_idx = 0
 
 $output_file_name = "folders-to-collection.csv"
 $output_file_mode = "w"
+
+$flush_cache << :folder_to_collection
 
 def parse_specific_options(opts)
   opts.on("-d", "--dir d", Integer) do |d|
@@ -18,12 +20,15 @@ def parse_specific_options(opts)
   end
   opts.on("--debug-label sl") do |sl|
     $debug_search_label = sl
+    $debug = true
   end
   opts.on("--debug-catno sc") do |sc|
     $debug_search_catno = sc
+    $debug = true
   end
   opts.on("--debug-title st") do |st|
     $debug_search_title = st
+    $debug = true
   end
 end
 
@@ -255,6 +260,7 @@ def handle_found(release_id, search_info, path, validate = true)
     return :match_not_found
   end
   $logger.info("[FOUND]#{search_info.message} > #{path}")
+  $cache[:folder_to_collection][release_id] = path
   $out.write([release_id, path].join($csv_separator) + "\n")  
   return :match_found
 end
@@ -326,6 +332,9 @@ def process_sheet(sheet)
   $logger.info("#{$count_ambiguous} ambiguous")
 end
 
+if $debug
+  $log_file_name.sub!(".log",".debug.log")
+end
 require_relative "common/init"
 
 book = Spreadsheet.open $collection_xls
@@ -348,7 +357,7 @@ $out = File.new("#{$export_dir}/#{$output_file_name}", "#{$output_file_mode}")
 header = ["Discogs ID", "Path"]
 $out.write(header.join($csv_separator) + "\n")
 
-if(!$debug_search_label.nil?)
+if $debug
   $logger.level = Logger::DEBUG
   search(2112993, $debug_search_label, $debug_search_catno, $debug_search_title)
 else

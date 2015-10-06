@@ -1,24 +1,10 @@
 require_relative "common/common"
-require "taglib"
-
-$base_dir_sq = "#{Dir.home}/Music/00 - Main"
-$base_dir_hq = "/Volumes/Media/Music/ZZ - HQ Archive"
-$music_dir = "Electronic/00 - By Label/"
 
 def parse_specific_options(opts)
+  # TODO add options for directories
 end
 
 require_relative "common/init"
-
-def iterate_music_dir(dir, regex, &block)
-  iterate_subdir(dir) do |label|
-    iterate_subdir(label) do |release|
-      iterate_files(release, regex) do |track|
-        block.call(track)
-      end
-    end
-  end
-end
 
 def check_discogs_id3(track) 
   TagLib::MPEG::File.open(track) do |file|
@@ -48,7 +34,7 @@ $ko = {}
 # iterate_music_dir("#{base_dir_hq}/#{$music_dir}", /.*\.(flac)$/) do |track|
 #   check_discogs_flac(track)
 # end
-iterate_music_dir("#{$base_dir_sq}/#{$music_dir}", /.*\.(mp3)$/) do |track|
+iterate_collection_dir("#{$collection_dir_sq}/#{$collection_basen_dir}", /.*\.(mp3)$/) do |track|
   check_discogs_id3(track)
 end
 

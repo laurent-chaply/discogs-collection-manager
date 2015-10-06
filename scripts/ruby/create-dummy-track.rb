@@ -33,7 +33,7 @@ def file_friendly(str)
 end
 
 def create_dummy_release(discogs_id)
-  release = $wrapper.get_release(discogs_id)
+  release, cached = get_cached_release(discogs_id)
   label = release.labels[0].name
   catno = release.labels[0].catno
   release_artists = release.artists
@@ -80,6 +80,5 @@ else
   File.open($ids_file).readlines.each do |line|
     puts line.strip
     create_dummy_release(line.strip)
-    sleep 1
   end
 end
