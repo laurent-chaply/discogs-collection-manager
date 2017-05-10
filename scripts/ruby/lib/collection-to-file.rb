@@ -188,9 +188,11 @@ module CollectionToFile
       @@blacklist = {}
       if @@blacklist.empty?
         blacklist_file = File.join(config.export_dir, config.collection.collection_to_file_blacklist)
-        File.open(blacklist_file).readlines.each do |line|
-          elements = line.strip.split(";")
-          @@blacklist[elements[0].to_i] = elements[1]
+        if File.exists?(blacklist_file)
+          File.open(blacklist_file).readlines.each do |line|
+            elements = line.strip.split(";")
+            @@blacklist[elements[0].to_i] = elements[1]
+          end
         end
       end
     end

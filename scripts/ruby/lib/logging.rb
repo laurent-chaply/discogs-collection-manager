@@ -2,6 +2,7 @@ require "yell"
 
 module Logging
   @@log_dir = "#{config.default_work_dir}/log"
+  FileUtils.mkdir_p(@@log_dir)
   @@log_name = $PROGRAM_NAME.sub("rb", "log")
   @@log_reset = config.log.reset
   

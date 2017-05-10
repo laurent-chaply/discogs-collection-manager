@@ -2,6 +2,9 @@ require "writeexcel"
 
 module Excel
   
+  # ensure export dir is created
+  FileUtils.mkdir_p config.export_dir
+  
   module_function
   
   def number_to_col(num)

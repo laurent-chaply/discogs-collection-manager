@@ -5,6 +5,7 @@ module CacheManager
   CACHE_DIR = "cache"
   
   @@cache_dir = File.join(config.default_work_dir, CACHE_DIR)
+  FileUtils.mkdir_p(@@cache_dir)
   @@flush_all = false
   @@enabled = true
   @@flush_list = []
