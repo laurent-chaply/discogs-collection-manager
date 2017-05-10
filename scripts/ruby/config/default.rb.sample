@@ -16,7 +16,7 @@ Configuration.for("default") {
   discogs {
     app_name "YOUR DISCOGS APP NAME"
     user_name "YOUR DISCOGS USER NAME"
-    user_token "YOUR DISCOGS TOKEN"
+    user_token "YOUR DISCOGS TOKEN ID"
     # wait time between API calls (to fit discogs call rate limitation)
     wait_time 1.5
     # discogs collection folder id
