@@ -95,7 +95,7 @@ def write_release_info(book, release_info)
   end
 end
 
-output = "master-collectiion.xls"
+output = "master-collection.xls"
 book = Excel::Workbook.new(output)
 header = ["Discogs Id", "Instance Id", "Path", "Label", "Catalog #", "Artists", "Title", "Year"]
 # Price
