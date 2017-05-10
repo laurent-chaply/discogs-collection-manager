@@ -1,29 +1,44 @@
 require "configuration"
 
 Configuration.for("default") {
+  # app name for logging
   app_name "DISCOGS COLLECTION MANAGER"
+  # directory for log files, cache files etc ...
   default_work_dir "#{Dir.home}/.discogs-collection-manager"
+  # directory for excel, cvs exports
   export_dir "#{Dir.home}/Music/Records/Discogs"
+  # reset log file between script calls
   log {
     reset true
   }
+  # discogs API info
+  # see https://www.discogs.com/developers/
   discogs {
     app_name "YOUR DISCOGS APP NAME"
     user_name "YOUR DISCOGS USER NAME"
-    user_token "YOUR DISCOGS TOKEN ID"
+    user_token "YOUR DISCOGS TOKEN"
+    # wait time between API calls (to fit discogs call rate limitation)
     wait_time 1.5
+    # discogs collection folder id
     default_folder_id 0
     items_per_page 50
+    # when getting price data, minimum record condition
     ref_condition "VG"
   }
+  # Excel generation config
   xls {
     default_font "Calibri"
     default_font_size 12
   }
+  # For matching digital files and collection items
   collection {
-    dir_hq "/Volumes/Media/Music/ZZ - HQ Archive"
-    dir_sq "#{Dir.home}/Music/00 - Main"
-    base_dir "Electronic/00 - By Label"
+    # base lookup dir for lossless digital versions
+    dir_hq "/path/to/lossless-digital-files"
+    dir_sq "/path/to/lossy-digital-files"
+    # sub-directory to start looking for
+    base_dir "start/sub/dir"
+    # csv file to store problematic file names to match that cannot be handled by the algorithm
+    # (cause incorrect match due to duplicate catalog id etc ...)
     collection_to_file_blacklist "collection-to-file-blacklist.csv"
   }
 }
