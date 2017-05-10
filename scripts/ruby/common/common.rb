@@ -15,7 +15,16 @@ DEFAULT_CACHE_DIR = "#{DEFAULT_WORK_DIR}/cache"
 DEFAULT_LOG_DIR = "#{DEFAULT_WORK_DIR}/log"
 
 # Discogs specific constants
-ITEM_CONDITIONS = {"VG" => "Very Good (VG)", "VG+" => "Very Good Plus (VG+)", "NM" => "Near Mint (NM or M-)", "M" => "Mint (M)"}
+ITEM_CONDITIONS = {
+  "P" => "Poor (P)",
+  "F" => "Fair (F)",
+  "G" => "Good (G)",
+  "G+" => "Good Plus (G+)",
+  "VG" => "Very Good (VG)",
+  "VG+" => "Very Good Plus (VG+)", 
+  "NM" => "Near Mint (NM or M-)", 
+  "M" => "Mint (M)"
+}
 FORMAT_VINYL = "Vinyl"
 DEFAULT_FOLDER_ID = 0
 UNCATEGORIZED_FOLDER_ID = 1
