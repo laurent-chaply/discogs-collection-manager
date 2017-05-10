@@ -11,7 +11,7 @@ require_relative "lib/excel"
 require_relative "lib/collection-to-file"
 
 class ReleaseInfo
-  attr_reader :id, :instance_id, :label, :catno, :artists, :title, :local_path, :tracks, :prices
+  attr_reader :id, :instance_id, :label, :catno, :artists, :title, :year, :local_path, :tracks, :prices
   def initialize(release, instance_id)
     @id = release.id
     @instance_id = instance_id
@@ -19,6 +19,7 @@ class ReleaseInfo
     @catno = release.labels[0].catno
     @artists = DiscogsUtils.artists_to_str(release.artists)
     @title = release.title
+    @year = release.year
     @local_path = nil
     @tracks = {}
     @prices = {}
@@ -84,7 +85,7 @@ end
 #TODO check beatport id for online status > base_dir = SQ Copy
 
 def write_release_info(book, release_info)
-  book.add_row([release_info.id, release_info.instance_id, release_info.local_path, release_info.label, release_info.catno, release_info.artists, release_info.title])
+  book.add_row([release_info.id, release_info.instance_id, release_info.local_path, release_info.label, release_info.catno, release_info.artists, release_info.title, release_info.year])
   # prices
   price_row = [release_info.prices[config.discogs.ref_condition]]
   price_row +=  release_info.prices.values
@@ -95,8 +96,8 @@ def write_release_info(book, release_info)
 end
 
 output = "master-collectiion.xls"
-book = ExcelWorkbook.new(output)
-header = ["Discogs Id", "Instance Id", "Path", "Label", "Catalog #", "Artists", "Title"]
+book = Excel::Workbook.new(output)
+header = ["Discogs Id", "Instance Id", "Path", "Label", "Catalog #", "Artists", "Title", "Year"]
 # Price
 header << "#{config.discogs.ref_condition} >"
 DiscogsUtils::ITEM_CONDITIONS.keys.each do |condition|

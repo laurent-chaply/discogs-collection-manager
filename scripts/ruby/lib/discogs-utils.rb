@@ -11,7 +11,9 @@ module DiscogsUtils
     "M" => "Mint (M)"
   }
   
-  def self.artists_to_str(artists)
+  module_function
+  
+  def artists_to_str(artists)
     artists_array = []
     join = ""
     artists.each do |artist|
@@ -27,16 +29,16 @@ module DiscogsUtils
     return artists_array.join()
   end
   
-  def self.is_vynil?(formats)
+  def is_vynil?(formats)
     return !formats.index { |format| format.name == FORMAT_VINYL }.nil?
   end
   
-  def self.normalize_label(label)
+  def normalize_label(label)
     excluded_words = ["record","records","recording","recordings","music","audio","schallplatten"]
     return label.gsub(/[[:punct:] ]+/, " ").split.delete_if{ |x| excluded_words.include?(x) }
   end
   
-  def self.array_to_ascii(string_array, downcase = false)
+  def array_to_ascii(string_array, downcase = false)
     ascii = []
     string_array.each do |s|
       if downcase
