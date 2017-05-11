@@ -21,7 +21,7 @@ https://www.discogs.com/developers/
 
 > TODO make it environemnt agnostic
 
-OSX (use spotlight *mdfind* to search for local files)
+Tested on OSX10.10+ (use spotlight *mdfind* to search for local files)
 
 *Ruby*
 
@@ -31,7 +31,7 @@ Use [bundler](http://bundler.io/) to install required gems
 
 `bundle install`
 
-Used gems
+-Used gems-
 
 
 pry<br>
@@ -39,7 +39,7 @@ stringex<br>
 configuration<br>
 yell<br>
 persistent-cache<br>
-write_excel<br>
+writeexcel<br>
 spreadsheet<br>
 discogs-wrapper<br>
 martinbtt-net-http-spy<br>
