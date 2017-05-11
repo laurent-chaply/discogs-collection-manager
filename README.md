@@ -23,9 +23,16 @@ https://www.discogs.com/developers/
 
 OSX (use spotlight *mdfind* to search for local files)
 
-*Ruby gems*
+*Ruby*
 
-> TODO use bundler
+Tested with ruby 2.4.0
+
+Use [bundler](http://bundler.io/) to install required gems
+
+`bundle install`
+
+Used gems
+
 
 pry<br>
 stringex<br>
